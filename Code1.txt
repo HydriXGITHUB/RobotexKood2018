@@ -1,0 +1,157 @@
+int maximumspeed = 255;
+int turnspeed = 170;
+int stopspeed = 0;
+const int frontEchoPin = 3;
+const int frontTriggerPin = 2;
+const int leftEchoPin = 5;
+const int leftTriggerPin = 4;
+const int rightEchoPin = 8;
+const int rightTriggerPin = 9;
+const int motorleftforward = 10;
+const int motorLeftbackward = 11;
+const int motorrightforward = 5;
+const int motorrightbackward = 6;
+const int motorPin = 5;
+volatile float maxFrontDistance = 25.00;
+volatile float frontDuration, frontDistanceCm, leftDuration, leftDistanceCm, rightDuration, rightDistanceCm;
+volatile float maxLeftDistance, maxRightDistance = 20.00;
+void setup() 
+{ 
+ // serial
+  Serial.begin(9600);
+  // ultrasonic
+  pinMode(frontTriggerPin, OUTPUT);
+  pinMode(frontEchoPin, INPUT);
+  pinMode(leftTriggerPin, OUTPUT);
+  pinMode(leftEchoPin, INPUT);
+  pinMode(rightTriggerPin, OUTPUT);
+  pinMode(rightEchoPin, INPUT);
+  // motors
+  pinMode(motorleftforward, OUTPUT);
+  pinMode(motorLeftbackward, OUTPUT);
+  pinMode(motorrightforward, OUTPUT);
+  pinMode(motorrightbackward, OUTPUT);
+} 
+ 
+ 
+void loop() 
+{ 
+// front distance check
+  checkFrontDistance();
+  if (frontDistanceCm < maxFrontDistance) {
+    Serial.println("Too close");
+    checkLeftDistance();
+    delay(20);
+    checkRightDistance();
+    delay(20);
+    if (leftDistanceCm < rightDistanceCm)
+      moveRight();
+    else if (leftDistanceCm > rightDistanceCm) {
+      moveLeft();
+    }
+  }
+  else {
+    Serial.println("OK");
+    moveForward();
+  }
+  // left distance check
+  checkLeftDistance();
+  if (leftDistanceCm < maxLeftDistance) {
+    Serial.println("Left too close");
+    delay(20);
+    checkLeftDistance();
+    delay(20);
+    checkRightDistance();
+    delay(20);
+    if (leftDistanceCm > rightDistanceCm)
+      moveForward();
+    else if (leftDistanceCm < rightDistanceCm) {
+      moveRight();
+    }
+  }
+  // right distance check
+  checkRightDistance();
+  if (rightDistanceCm < maxRightDistance) {
+    Serial.println("Right too close");
+    delay(20);
+    checkRightDistance();
+    delay(20);
+    checkLeftDistance();
+    delay(20);
+    if (rightDistanceCm > leftDistanceCm)
+      moveForward();
+    else if (rightDistanceCm < leftDistanceCm) {
+      moveLeft();
+    }
+  }
+}
+ 
+
+
+void checkFrontDistance() {
+  digitalWrite(frontTriggerPin, LOW);  //para generar un pulso limpio ponemos a LOW 4us
+  delayMicroseconds(4);
+  digitalWrite(frontTriggerPin, HIGH);  //generamos Trigger (disparo) de 10us
+  delayMicroseconds(10);
+  digitalWrite(frontTriggerPin, LOW);
+  frontDuration = pulseIn(frontEchoPin, HIGH);  //medimos el tiempo entre pulsos, en microsegundos
+  frontDistanceCm = frontDuration * 10 / 292 / 2;  //convertimos a distancia, en cm
+  Serial.print("Distance: ");
+  Serial.print(frontDistanceCm);
+  Serial.println(" cm");
+}
+void checkLeftDistance() {
+  digitalWrite(leftTriggerPin, LOW);  //para generar un pulso limpio ponemos a LOW 4us
+  delayMicroseconds(4);
+  digitalWrite(leftTriggerPin, HIGH);  //generamos Trigger (disparo) de 10us
+  delayMicroseconds(10);
+  digitalWrite(leftTriggerPin, LOW);
+  leftDuration = pulseIn(leftEchoPin, HIGH);  //medimos el tiempo entre pulsos, en microsegundos
+  leftDistanceCm = leftDuration * 10 / 292 / 2;  //convertimos a distancia, en cm
+  Serial.print("Left distance: ");
+  Serial.print(leftDistanceCm);
+  Serial.println(" cm");
+}
+void checkRightDistance() {
+  digitalWrite(rightTriggerPin, LOW);  //para generar un pulso limpio ponemos a LOW 4us
+  delayMicroseconds(4);
+  digitalWrite(rightTriggerPin, HIGH);  //generamos Trigger (disparo) de 10us
+  delayMicroseconds(10);
+  digitalWrite(rightTriggerPin, LOW);
+  rightDuration = pulseIn(rightEchoPin, HIGH);  //medimos el tiempo entre pulsos, en microsegundos
+  rightDistanceCm = rightDuration * 10 / 292 / 2;  //convertimos a distancia, en cm
+  Serial.print("Right distance: ");
+  Serial.print(rightDistanceCm);
+  Serial.println(" cm");
+}
+void moveForward() {
+  Serial.println("Forward.");
+  digitalWrite(motorLeftbackward, LOW);
+  digitalWrite(motorleftforward, maximumspeed);
+  digitalWrite(motorrightbackward, LOW);
+  digitalWrite(motorrightforward, maximumspeed);
+}
+
+void moveLeft() {
+  Serial.println("Left.");
+  digitalWrite(motorLeftbackward, LOW);
+  digitalWrite(motorleftforward, turnspeed);
+  digitalWrite(motorrightbackward, LOW);
+  digitalWrite(motorrightforward, maximumspeed);
+}
+
+void moveRight() {
+  Serial.println("Right.");
+  digitalWrite(motorLeftbackward, LOW);
+  digitalWrite(motorLeftbackward, maximumspeed);
+  digitalWrite(motorrightforward, LOW);
+  digitalWrite(motorrightbackward, turnspeed);
+}
+
+void moveBackwards() {
+  Serial.println("Backwards.");
+  digitalWrite(motorLeftbackward, maximumspeed);
+  digitalWrite(motorLeftbackward, LOW);
+  digitalWrite(motorrightforward, maximumspeed);
+  digitalWrite(motorrightbackward, LOW);
+}
